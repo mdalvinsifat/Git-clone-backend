@@ -1,14 +1,19 @@
 import React, { useState } from "react";
 import Logo from "../../assets/github-mark-white.svg"
 import "./auth.css"
+import axios from "axios";
+import { useAuth } from "../../AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
-    fullName: "",
+    username: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -17,15 +22,35 @@ const Signup = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const navigate = useNavigate()
+const { setcurrentUser } = useAuth();
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Signup Data:", formData);
+    setError("");
+    setLoading(true);
+
+    try {
+      const res = await axios.post("http://localhost:3000/signup", {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password
+      });
+        localStorage.setItem("token", res.data.token);
+      localStorage.setItem("userId", res.data.userId);
+       setcurrentUser(res.data.userId);
+      console.log("Registration successful:", res.data);
+      navigate("/")
+    } catch (error) {
+      console.log("Registration error:", error);
+      setError(error.response?.data?.message || "Registration failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-black flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        {/* GitHub-style Logo */}
         <div className="flex justify-center">
           <img src={Logo} alt="GitHub Logo" className="h-12 w-12" />
         </div>
@@ -37,19 +62,25 @@ const Signup = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-gray-900 py-8 px-4 shadow-2xl sm:rounded-lg sm:px-10 border border-gray-700">
+          {error && (
+            <div className="mb-4 p-2 bg-red-900 border border-red-700 text-red-200 rounded text-sm">
+              {error}
+            </div>
+          )}
+          
           <form className="space-y-6" onSubmit={handleSubmit}>
             
             {/* Full Name */}
             <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-200 mb-1">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-200 mb-1">
                 Full name
               </label>
               <input
-                id="fullName"
-                name="fullName"
+                id="username"
+                name="username"
                 type="text"
                 required
-                value={formData.fullName}
+                value={formData.username}
                 onChange={handleChange}
                 className="appearance-none block w-full px-3 py-2 border border-gray-600 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-gray-800 text-white"
                 placeholder="Enter your full name"
@@ -88,35 +119,16 @@ const Signup = () => {
                 className="appearance-none block w-full px-3 py-2 border border-gray-600 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-gray-800 text-white"
                 placeholder="Enter your password"
               />
-              <p className="mt-1 text-xs text-gray-400">
-                Make sure it's at least 15 characters OR at least 8 characters including a number and a lowercase letter.
-              </p>
-            </div>
-
-            {/* Confirm Password */}
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-200 mb-1">
-                Confirm Password
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className="appearance-none block w-full px-3 py-2 border border-gray-600 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-gray-800 text-white"
-                placeholder="Confirm your password"
-              />
             </div>
 
             {/* Submit Button */}
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors focus:ring-offset-gray-900"
+                disabled={loading}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Create account
+                {loading ? "Creating account..." : "Create account"}
               </button>
             </div>
           </form>

@@ -1,22 +1,53 @@
 import React, { useState } from "react";
 import "./auth.css"
+import { useAuth } from "../../AuthContext";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Login = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
+  
+    if (error) setError("");
   };
 
-  const handleSubmit = (e) => {
+  const navigate = useNavigate();
+  const { setcurrentUser } = useAuth();
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login Data:", formData);
+    setError("");
+    setLoading(true);
+
+    try {
+      const res = await axios.post("http://localhost:3000/login", {
+        email: formData.email,
+        password: formData.password
+      });
+      
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("userId", res.data.userId);
+
+      setcurrentUser(res.data.userId);
+      console.log("Login successful:", res.data);
+      navigate("/");
+      
+    } catch (error) {
+      console.log("Login error:", error);
+      setError(error.response?.data?.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -42,6 +73,13 @@ const Login = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-gray-900 py-8 px-4 shadow-2xl sm:rounded-lg sm:px-10 border border-gray-700">
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-2 bg-red-900 border border-red-700 text-red-200 rounded text-sm">
+              {error}
+            </div>
+          )}
+          
           <form className="space-y-6" onSubmit={handleSubmit}>
             
             {/* Email */}
@@ -87,9 +125,10 @@ const Login = () => {
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors focus:ring-offset-gray-900"
+                disabled={loading}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Sign in
+                {loading ? "Signing in..." : "Sign in"}
               </button>
             </div>
           </form>
